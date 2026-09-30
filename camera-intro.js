@@ -15,6 +15,8 @@ export function startCameraIntro(stage, finish, options = {}) {
   scene.add(pivot);
   let disposed = false;
   let frame = 0;
+  const frameInterval = renderer.isSoftware ? 1000 / 12 : matchMedia('(max-width: 700px)').matches ? 1000 / 30 : 0;
+  let renderedAt = 0;
   let flashLamp = null;
   const owned = new Set();
   const face = new THREE.MeshBasicMaterial({ color: '#111110', polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
@@ -82,7 +84,10 @@ export function startCameraIntro(stage, finish, options = {}) {
       const eased = t * t * (3 - 2 * t);
       pivot.rotation.y = -.55 + eased * (Math.PI * 2 + .43);
       pivot.rotation.x = .12 + Math.sin(t * Math.PI * 2) * .1;
-      renderer.render(scene, camera);
+      if (now - renderedAt >= frameInterval || t >= 1) {
+        renderer.render(scene, camera);
+        renderedAt = now;
+      }
       if (options.preview || t < 1) frame = requestAnimationFrame(tick);
       else finish();
     }
@@ -118,6 +123,7 @@ function createSoftwareRenderer() {
   const vp = new THREE.Matrix4();
   return {
     domElement: canvas,
+    isSoftware: true,
     setPixelRatio() {},
     setSize(w, h) { width=w; height=h; canvas.width=w; canvas.height=h; },
     render(scene, camera) {
@@ -170,4 +176,3 @@ function createSoftwareRenderer() {
     dispose(){cached=null;}
   };
 }
-
