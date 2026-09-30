@@ -24,6 +24,8 @@ export function startCameraIntro(stage, finish, options = {}) {
     if (!width || !height) return;
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
+    camera.position.z = Math.max(6.7, 6.7 * 1.15 / camera.aspect);
+    camera.updateMatrixWorld();
     camera.updateProjectionMatrix();
   }
   const observer = new ResizeObserver(resize);
@@ -43,11 +45,13 @@ export function startCameraIntro(stage, finish, options = {}) {
       owned.add(edges);
       node.add(new THREE.LineSegments(edges, line));
     });
+    const door = model.getObjectByName("camDoor_GRP");
+    if (door) { door.position.set(0,0,0); door.rotation.set(0,0,0); door.scale.set(1,1,1); }
     model.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(model);
     const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
-    const scale = 3.2 / Math.max(size.x, size.y, size.z);
+    const scale = 4 / Math.max(size.x, size.y, size.z);
     const centered = new THREE.Group();
     model.position.sub(center);
     centered.add(model); centered.scale.setScalar(scale); pivot.add(centered);

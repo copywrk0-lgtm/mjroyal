@@ -40,8 +40,8 @@ header{position:absolute;z-index:20;top:0;left:0;width:100%;display:flex;justify
 .loader{background:#111110;color:#f4f3ee;display:block;transition:none}
 .loader-brand{position:absolute;top:30px;left:32px;right:32px;display:flex;justify-content:space-between;font-size:12px;letter-spacing:.16em}
 .loader-brand span{font-size:8px;color:#999}
-.loader-title{position:absolute;top:16%;left:4%;right:4%;font-family:"DM Sans",sans-serif;font-weight:500;font-size:clamp(38px,8.5vw,150px);line-height:.95;letter-spacing:-.065em;display:flex;justify-content:space-between}
-#camera-stage{position:absolute;inset:18% 0 12%;z-index:1;opacity:0;transition:opacity .35s ease}
+.loader-title{position:absolute;top:16%;left:4%;right:4%;font-family:Arial,sans-serif;font-weight:800;font-size:clamp(38px,8.5vw,150px);line-height:.95;letter-spacing:-.065em;display:flex;justify-content:space-between}
+#camera-stage{position:absolute;inset:0 0 12%;z-index:1;opacity:0;transition:opacity .35s ease}
 #camera-stage.ready{opacity:1}#camera-stage canvas{display:block;width:100%;height:100%}
 .loader-status{bottom:5%;color:#aaa;text-shadow:none;font-size:8px}
 .loader-status i:after{animation:focusSweep 3.6s ease-out forwards;box-shadow:none;background:#ddd}
