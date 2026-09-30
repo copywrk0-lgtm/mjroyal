@@ -13,12 +13,38 @@ if ((!introSeen || previewIntro) && !reduceMotion && loader) {
     if (finished) return;
     finished = true;
     clearTimeout(safetyTimer);
-    document.body.classList.remove("loading");
     try { sessionStorage.setItem("mjroyal-wire-intro-seen", "1"); } catch {}
     loader.style.pointerEvents = "none";
-    const exit = loader.animate([{transform:"translateY(0)"},{transform:"translateY(-100%)"}],
-      {duration:800,easing:"cubic-bezier(.76,0,.24,1)",fill:"forwards"});
-    exit.finished.catch(() => {}).then(() => { cleanup(); loader.remove(); });
+    const glow = document.createElement("div");
+    glow.setAttribute("aria-hidden", "true");
+    glow.style.cssText = "position:absolute;left:50%;top:52%;width:36vmin;height:36vmin;transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;background:radial-gradient(circle,#fff 0%,rgba(255,255,255,.8) 12%,rgba(255,255,255,.2) 38%,transparent 70%);opacity:0;z-index:3";
+    loader.appendChild(glow);
+    glow.animate([
+      {opacity:0,transform:"translate(-50%,-50%) scale(.15)"},
+      {opacity:1,transform:"translate(-50%,-50%) scale(1.6)"}
+    ], {duration:180,easing:"cubic-bezier(.2,.8,.3,1)",fill:"forwards"});
+    const flash = document.createElement("div");
+    flash.setAttribute("aria-hidden", "true");
+    flash.style.cssText = "position:fixed;inset:0;z-index:120;background:#fff;opacity:0;pointer-events:none";
+    document.body.appendChild(flash);
+    const exposure = flash.animate([
+      {opacity:0},
+      {opacity:1,offset:.10},
+      {opacity:1,offset:.24},
+      {opacity:.55,offset:.50},
+      {opacity:0}
+    ], {duration:900,delay:120,easing:"linear",fill:"forwards"});
+    // Swap the camera for the homepage while the exposure is fully white.
+    setTimeout(() => {
+      cleanup();
+      loader.remove();
+      document.body.classList.remove("loading");
+      document.querySelector(".hero")?.animate([
+        {filter:"brightness(1.45) saturate(.7)"},
+        {filter:"brightness(1) saturate(1)"}
+      ], {duration:780,easing:"ease-out"});
+    }, 250);
+    exposure.finished.catch(() => {}).then(() => flash.remove());
   }
   let safetyTimer = setTimeout(finishIntro, 8000);
   document.getElementById("loader-skip")?.addEventListener("click", finishIntro);
