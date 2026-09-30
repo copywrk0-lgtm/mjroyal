@@ -18,7 +18,7 @@
 <meta name="twitter:image" content="https://mjroyal.vercel.app/assets/photo-03.webp">
 <script>
 try{
-  if(sessionStorage.getItem("mjroyal-intro-seen")){
+  if(sessionStorage.getItem("mjroyal-wire-intro-seen")){
     document.documentElement.classList.add("intro-seen");
   }
 }catch(e){}
@@ -29,17 +29,14 @@ try{
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="loader" class="loader" aria-hidden="true">
-  <img class="loader-art" src="assets/mjroyal-loader.webp" alt="">
-  <div class="loader-vignette"></div>
-  <div class="lens-charge"></div>
-  <div class="loader-grain"></div>
-  <div class="loader-status">
-    <span>FOCUS LOCKED</span>
-    <i></i>
-  </div>
+<div id="loader" class="loader">
+  <div class="loader-brand">MJ ROYAL <span>PHOTOGRAPHY / FILM</span></div>
+  <div class="loader-title">TIMELESS <span>STORIES</span></div>
+  <div id="camera-stage"></div>
+  <div class="loader-status"><span id="loader-label">PREPARING THE FRAME</span><i></i></div>
+  <button id="loader-skip" type="button" aria-label="Skip opening animation">SKIP INTRO ↗</button>
 </div>
-<div id="flash" aria-hidden="true"></div>
+<noscript><style>.loader{display:none!important}</style></noscript>
 
 <header>
   <a class="wordmark" href="#top">MJ ROYAL</a>

@@ -1,55 +1,32 @@
 const loader = document.getElementById("loader");
-const flash = document.getElementById("flash");
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
 const introSeen = (() => {
-  try { return sessionStorage.getItem("mjroyal-intro-seen") === "1"; }
+  try { return sessionStorage.getItem("mjroyal-wire-intro-seen") === "1"; }
   catch { return false; }
 })();
-
 if (!introSeen && !reduceMotion && loader) {
   document.body.classList.add("loading");
-
-  const reveal = () => {
-    flash?.animate(
-      [
-        { opacity: 0 },
-        { opacity: 1, offset: 0.12 },
-        { opacity: 1, offset: 0.28 },
-        { opacity: 0.72, offset: 0.46 },
-        { opacity: 0, offset: 1 }
-      ],
-      { duration: 1050, easing: "cubic-bezier(.16,.7,.2,1)", fill: "forwards" }
-    );
-
-    setTimeout(() => {
-      if (loader) {
-        loader.style.opacity = "0";
-        loader.style.visibility = "hidden";
-      }
-    }, 155);
-
-    const hero = document.querySelector(".hero");
-    hero?.animate(
-      [
-        { filter: "brightness(2.15) saturate(.35)" },
-        { filter: "brightness(1.25) saturate(.72)", offset: .35 },
-        { filter: "none" }
-      ],
-      { duration: 1100, delay: 110, easing: "ease-out", fill: "both" }
-    );
-
-    setTimeout(() => {
-      loader?.remove();
-      document.body.classList.remove("loading");
-      try { sessionStorage.setItem("mjroyal-intro-seen", "1"); } catch {}
-    }, 1100);
-  };
-
-  window.addEventListener("load", () => setTimeout(reveal, 900), { once: true });
+  let finished = false;
+  let cleanup = () => {};
+  function finishIntro() {
+    if (finished) return;
+    finished = true;
+    clearTimeout(safetyTimer);
+    document.body.classList.remove("loading");
+    try { sessionStorage.setItem("mjroyal-wire-intro-seen", "1"); } catch {}
+    loader.style.pointerEvents = "none";
+    const exit = loader.animate([{transform:"translateY(0)"},{transform:"translateY(-100%)"}],
+      {duration:800,easing:"cubic-bezier(.76,0,.24,1)",fill:"forwards"});
+    exit.finished.catch(() => {}).then(() => { cleanup(); loader.remove(); });
+  }
+  const safetyTimer = setTimeout(finishIntro, 6000);
+  document.getElementById("loader-skip")?.addEventListener("click", finishIntro);
+  import("./camera-intro.js").then(({startCameraIntro}) => {
+    if (finished) return;
+    cleanup = startCameraIntro(document.getElementById("camera-stage"), finishIntro);
+  }).catch(() => finishIntro());
 } else {
   loader?.remove();
-  flash?.remove();
   document.body.classList.remove("loading");
 }
 
