@@ -65,6 +65,7 @@ export function startCameraIntro(stage, finish, options = {}) {
     const lampMaterial = new THREE.MeshBasicMaterial({color:'#bcbcb4',side:THREE.DoubleSide});
     flashLamp = new THREE.Mesh(lampGeometry, lampMaterial);
     flashLamp.position.set(0, housing.position.y, .265);
+    flashLamp.renderOrder = 1;
     owned.add(housingGeometry); owned.add(housingEdges);
     owned.add(lampGeometry); owned.add(lampMaterial);
     pivot.add(housing, flashLamp);
@@ -156,10 +157,10 @@ function createSoftwareRenderer() {
           const points=tri.ids.map(i=>projected[i]);
           const [a,b,c]=points;
           if ((b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0])>=0)continue;
-          faces.push({points,edges:tri.edges,z:(a[2]+b[2]+c[2])/3,color:item.mesh.material.color.getStyle()});
+          faces.push({points,edges:tri.edges,z:(a[2]+b[2]+c[2])/3,color:item.mesh.material.color.getStyle(),order:item.mesh.renderOrder});
         }
       }
-      faces.sort((a,b)=>b.z-a.z);
+      faces.sort((a,b)=>a.order-b.order || b.z-a.z);
       ctx.fillStyle='#111110';ctx.strokeStyle='rgba(236,236,231,.72)';ctx.lineWidth=.7;
       for(const face of faces){
         ctx.beginPath();face.points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fillStyle=face.color;ctx.fill();
