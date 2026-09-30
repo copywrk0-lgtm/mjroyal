@@ -5,7 +5,7 @@ export function startCameraIntro(stage, finish, options = {}) {
   let renderer;
   try { renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); }
   catch { renderer = createSoftwareRenderer(); }
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, matchMedia('(max-width: 700px)').matches ? 1.5 : 1.75));
   stage.appendChild(renderer.domElement);
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(35, 1, 0.01, 100);
@@ -170,3 +170,4 @@ function createSoftwareRenderer() {
     dispose(){cached=null;}
   };
 }
+

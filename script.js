@@ -68,18 +68,35 @@ if ((!introSeen || previewIntro) && !reduceMotion && loader) {
 const menuButton = document.getElementById("menu");
 const menuClose = document.getElementById("menu-close");
 const menuPanel = document.getElementById("menu-panel");
+let menuReturnFocus = null;
 
 function setMenu(open) {
   if (!menuPanel || !menuButton) return;
+  if (open && !menuPanel.classList.contains("open")) menuReturnFocus = document.activeElement;
+  document.querySelector("main").inert = open;
+  document.querySelector("footer").inert = open;
+  document.querySelector("header").inert = open;
   menuPanel.classList.toggle("open", open);
   menuPanel.setAttribute("aria-hidden", String(!open));
   menuButton.setAttribute("aria-expanded", String(open));
   document.body.classList.toggle("menu-open", open);
+  if (open) menuClose?.focus({preventScroll:true});
+  else menuReturnFocus?.focus({preventScroll:true});
 }
 menuButton?.addEventListener("click", () => setMenu(true));
 menuClose?.addEventListener("click", () => setMenu(false));
 menuPanel?.querySelectorAll("a").forEach(link => link.addEventListener("click", () => setMenu(false)));
-window.addEventListener("keydown", (e) => { if (e.key === "Escape") setMenu(false); });
+window.addEventListener("keydown", (e) => {
+  if (!menuPanel?.classList.contains("open")) return;
+  if (e.key === "Escape") setMenu(false);
+  if (e.key !== "Tab") return;
+  const controls = [...menuPanel.querySelectorAll("button, a[href]")];
+  const first = controls[0], last = controls.at(-1);
+  if (e.shiftKey && document.activeElement === first) {e.preventDefault();last.focus();}
+  else if (!e.shiftKey && document.activeElement === last) {e.preventDefault();first.focus();}
+});
+
+const imageDimensions = {"photo-01.webp": [1440, 1801], "photo-02.webp": [1440, 1801], "photo-03.webp": [1758, 2200], "photo-04.webp": [1760, 2200], "photo-05.webp": [1440, 1801], "photo-06.webp": [1760, 2200], "photo-07.webp": [1440, 1801], "photo-08.webp": [1758, 2200], "photo-09.webp": [1758, 2200], "photo-10.webp": [1760, 2200], "photo-11.webp": [1758, 2200], "photo-12.webp": [1440, 1801], "photo-13.webp": [1758, 2200], "photo-14.webp": [1758, 2200], "photo-15.webp": [1758, 2200], "photo-16.webp": [1440, 1801]};
 
 const stories = {
   "om-divya": { title: "OM × DIVYA", kicker: "A STORY MEANT TO LAST", images: ["photo-08.webp","photo-10.webp","photo-12.webp","photo-14.webp"] },
@@ -102,10 +119,15 @@ function openStory(key) {
   storyTitle.textContent = story.title;
   storyKicker.textContent = story.kicker;
   storyGallery.innerHTML = story.images
-    .map((src, i) => `<img src="assets/${src}" loading="${i === 0 ? "eager" : "lazy"}" decoding="async" alt="${story.title} — MJ Royal wedding story">`)
+    .map((src, i) => {
+      const [width,height] = imageDimensions[src];
+      const stem = src.replace('.webp','');
+      return `<img src="assets/${src}" width="${width}" height="${height}" srcset="assets/responsive/${stem}-640.webp 640w, assets/responsive/${stem}-1280.webp 1280w, assets/${src} ${width}w" sizes="(max-width: 700px) 90vw, 65vw" loading="${i === 0 ? "eager" : "lazy"}" decoding="async" alt="${story.title} — MJ Royal wedding story">`;
+    })
     .join("");
   document.body.classList.add("story-open");
   viewer.showModal();
+  viewer.scrollTop = 0;
 }
 function closeStory() {
   if (!viewer?.open) return;
@@ -121,23 +143,35 @@ viewer?.addEventListener("close", () => document.body.classList.remove("story-op
 
 const film = document.getElementById("featured-film");
 const filmPlay = document.getElementById("film-play");
+const filmDesktop = window.matchMedia("(min-width: 701px) and (pointer: fine)");
+if (film && !filmDesktop.matches) {
+  film.preload = "none";
+  film.poster = "assets/responsive/photo-10-640.webp";
+}
 
 filmPlay?.addEventListener("click", async () => {
   if (!film) return;
+  film.controls = true;
+  film.muted = false;
   if (film.paused) {
-    await film.play().catch(() => {});
-    filmPlay.textContent = "FULLSCREEN ↗";
+    try {
+      await film.play();
+      if (!filmDesktop.matches) filmPlay.hidden = true;
+      else filmPlay.textContent = "FULLSCREEN ↗";
+    } catch {filmPlay.textContent = "PLAY FILM ↗";}
   } else if (film.requestFullscreen) {
     film.requestFullscreen().catch(() => {});
+  } else if (film.webkitEnterFullscreen) {
+    film.webkitEnterFullscreen();
   }
 });
 
 if ("IntersectionObserver" in window && film) {
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
-      if (entry.isIntersecting && entry.intersectionRatio > 0.45 && !reduceMotion) {
+      if (entry.isIntersecting && entry.intersectionRatio > 0.45 && !reduceMotion && filmDesktop.matches && !navigator.connection?.saveData) {
         film.play().catch(() => {});
-      } else {
+      } else if (!entry.isIntersecting) {
         film.pause();
       }
     });

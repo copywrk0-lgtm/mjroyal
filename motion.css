@@ -4,9 +4,9 @@ html.lenis {scroll-behavior:auto}
 .scroll-progress{position:fixed;top:0;left:0;width:100%;height:2px;background:#c9b899;transform:scaleX(0);transform-origin:left;z-index:80;pointer-events:none}
 .loading .scroll-progress,.menu-open .scroll-progress,.story-open .scroll-progress{opacity:0}
 .story-media{display:block;position:relative;overflow:hidden;aspect-ratio:.8;background:#d3cbbb}
-.story-card.a .story-media,.story-card.d .story-media{aspect-ratio:1.25}
+.story-card.a .story-media,.story-card.d .story-media{aspect-ratio:.88}
 .story-card .story-media img{aspect-ratio:auto;width:100%;height:100%;transform:translate3d(0,var(--image-drift,0px),0) scale(1.12);transition:filter .6s ease}
-.story-card:hover .story-media img{transform:translate3d(0,var(--image-drift,0px),0) scale(1.12);filter:brightness(.87)}
+@media(hover:hover) and (pointer:fine){.story-card:hover .story-media img{transform:translate3d(0,var(--image-drift,0px),0) scale(1.12);filter:brightness(.87)}}
 .about-image{overflow:hidden;aspect-ratio:.78}
 .about-image img{aspect-ratio:auto;width:100%;height:100%;transform:translate3d(0,var(--image-drift,0px),0) scale(1.12)}
 .scroll-motion .hero>img{animation:none;transform:scale(1.08)}
@@ -18,5 +18,7 @@ html.lenis {scroll-behavior:auto}
 .scroll-motion .scroll-word{opacity:.25}
 .film-frame{overflow:hidden}
 .story-card:focus-visible,.contact a:focus-visible,.hero-cta:focus-visible{outline:1px solid currentColor;outline-offset:7px}
+@media(min-width:701px){.story-card.a .story-media,.story-card.d .story-media{aspect-ratio:1.25}}
 @media(max-width:700px){.scroll-motion .scroll-reveal{transform:translate3d(0,22px,0);transition-duration:.8s,.9s}.scroll-motion .scroll-reveal.is-visible{transform:none}.scroll-motion .story-card .story-media{clip-path:inset(6% 0);transition-duration:1s}}
 @media(prefers-reduced-motion:reduce){.scroll-progress{display:none}.scroll-motion .scroll-reveal{opacity:1;transform:none;transition:none}.scroll-motion .story-card .story-media{clip-path:none;transition:none}.story-card .story-media img,.about-image img,.scroll-motion .hero>img{transform:none!important}.scroll-word{opacity:1!important}.film-frame{clip-path:none!important}}
+

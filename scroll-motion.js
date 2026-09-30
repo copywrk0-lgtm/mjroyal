@@ -1,11 +1,11 @@
-import Lenis from './vendor/lenis.mjs';
 
-export function startScrollMotion() {
+export async function startScrollMotion() {
   const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
   if (motionPreference.matches || !('IntersectionObserver' in window)) return;
   const root = document.documentElement;
   const desktop = matchMedia('(min-width: 701px) and (pointer: fine)');
   let lenis = null;
+  let scrollVersion = 0;
   let frame = 0;
   let started = false;
   let stopped = false;
@@ -102,12 +102,14 @@ export function startScrollMotion() {
       const amount = clamp((height * .84 - headingRect.top) / (height * .54 + headingRect.height * .15));
       words.forEach((word, index) => {
         const phase = clamp((amount - index / words.length * .72) / .28);
-        word.style.opacity = String(.25 + phase * .75);
+        const baseOpacity = desktop.matches ? .25 : .5;
+        word.style.opacity = String(baseOpacity + phase * (1 - baseOpacity));
       });
     }
     if (filmRect) {
       const amount = clamp((height * .92 - filmRect.top) / (height * .6));
-      filmFrame.style.clipPath = `inset(0 ${5 * (1 - amount)}% 0 ${5 * (1 - amount)}%)`;
+      const inset = (desktop.matches ? 5 : 2) * (1 - amount);
+      filmFrame.style.clipPath = `inset(0 ${inset}% 0 ${inset}%)`;
     }
   }
   function schedule() {
@@ -122,16 +124,22 @@ export function startScrollMotion() {
     }
     schedule();
   }
-  function configureScroll() {
+  async function configureScroll() {
+    const version = ++scrollVersion;
     lenis?.destroy();
-    lenis = desktop.matches ? new Lenis({
+    lenis = null;
+    syncLock();
+    if (!desktop.matches || stopped) return;
+    const {default:Lenis} = await import('./vendor/lenis.mjs');
+    if (version !== scrollVersion || stopped || !desktop.matches) return;
+    lenis = new Lenis({
       autoRaf:true,
       duration:.85,
       smoothWheel:true,
       syncTouch:false,
       anchors:{duration:.9},
       prevent:node => node.closest?.('#story-viewer, #menu-panel')
-    }) : null;
+    });
     syncLock();
   }
   const bodyObserver = new MutationObserver(syncLock);
@@ -140,7 +148,7 @@ export function startScrollMotion() {
     event.target.closest?.('.scroll-reveal')?.classList.add('is-visible');
   }
   root.classList.add('scroll-motion');
-  configureScroll();
+  configureScroll().catch(() => {});
   window.addEventListener('scroll', schedule, {passive:true});
   window.addEventListener('resize', schedule, {passive:true});
   document.addEventListener('focusin', focusReveal);
@@ -172,3 +180,4 @@ export function startScrollMotion() {
   motionPreference.addEventListener('change', onPreference);
   return dispose;
 }
+
