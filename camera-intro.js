@@ -4,7 +4,7 @@ import { GLTFLoader } from './vendor/GLTFLoader.js';
 export function startCameraIntro(stage, finish) {
   let renderer;
   try { renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); }
-  catch { finish(); return () => {}; }
+  catch { renderer = createSoftwareRenderer(); }
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
   stage.appendChild(renderer.domElement);
   const scene = new THREE.Scene();
@@ -75,5 +75,66 @@ export function startCameraIntro(stage, finish) {
     owned.forEach(resource => resource.dispose());
     renderer.dispose();
     renderer.domElement.remove();
+  };
+}
+
+// Canvas fallback uses the same camera geometry and rotation when WebGL is unavailable.
+function createSoftwareRenderer() {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  let width = 1, height = 1, cached = null;
+  const vp = new THREE.Matrix4();
+  return {
+    domElement: canvas,
+    setPixelRatio() {},
+    setSize(w, h) { width=w; height=h; canvas.width=w; canvas.height=h; },
+    render(scene, camera) {
+      if (!ctx) return;
+      scene.updateMatrixWorld(true); camera.updateMatrixWorld(true);
+      camera.matrixWorldInverse.copy(camera.matrixWorld).invert();
+      vp.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+      if (!cached) {
+        cached=[];
+        scene.traverse(mesh => {
+          if (!mesh.isMesh) return;
+          const p=mesh.geometry.attributes.position;
+          const index=mesh.geometry.index;
+          const edges=mesh.children.find(child=>child.isLineSegments)?.geometry.attributes.position;
+          const edgeSet=new Set();
+          const key=(x,y,z)=>[x,y,z].map(v=>Math.round(v*10000)).join(',');
+          const pair=(a,b)=>a<b?a+'|'+b:b+'|'+a;
+          if (edges) for(let i=0;i<edges.count;i+=2) {
+            edgeSet.add(pair(key(edges.getX(i),edges.getY(i),edges.getZ(i)),key(edges.getX(i+1),edges.getY(i+1),edges.getZ(i+1))));
+          }
+          const vertices=Array.from({length:p.count},(_,i)=>new THREE.Vector3(p.getX(i),p.getY(i),p.getZ(i)));
+          const keys=vertices.map(v=>key(v.x,v.y,v.z));
+          const triangles=[];
+          for(let i=0;i<(index?index.count:p.count);i+=3){
+            const ids=[0,1,2].map(n=>index?index.getX(i+n):i+n);
+            triangles.push({ids,edges:[0,1,2].map(n=>edgeSet.has(pair(keys[ids[n]],keys[ids[(n+1)%3]])))});
+          }
+          cached.push({mesh,vertices,triangles});
+        });
+      }
+      ctx.clearRect(0,0,width,height);
+      const faces=[];
+      for(const item of cached){
+        const matrix=new THREE.Matrix4().multiplyMatrices(vp,item.mesh.matrixWorld);
+        const projected=item.vertices.map(v=>{const p=v.clone().applyMatrix4(matrix);return [(p.x+1)*width/2,(1-p.y)*height/2,p.z];});
+        for(const tri of item.triangles){
+          const points=tri.ids.map(i=>projected[i]);
+          const [a,b,c]=points;
+          if ((b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0])>=0)continue;
+          faces.push({points,edges:tri.edges,z:(a[2]+b[2]+c[2])/3});
+        }
+      }
+      faces.sort((a,b)=>b.z-a.z);
+      ctx.fillStyle='#111110';ctx.strokeStyle='rgba(236,236,231,.72)';ctx.lineWidth=.7;
+      for(const face of faces){
+        ctx.beginPath();face.points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fill();
+        ctx.beginPath();face.edges.forEach((draw,i)=>{if(draw){const a=face.points[i],b=face.points[(i+1)%3];ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);}});ctx.stroke();
+      }
+    },
+    dispose(){cached=null;}
   };
 }
