@@ -1,7 +1,7 @@
 import * as THREE from './vendor/three.module.js';
 import { GLTFLoader } from './vendor/GLTFLoader.js';
 
-export function startCameraIntro(stage, finish) {
+export function startCameraIntro(stage, finish, options = {}) {
   let renderer;
   try { renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); }
   catch { renderer = createSoftwareRenderer(); }
@@ -53,17 +53,19 @@ export function startCameraIntro(stage, finish) {
     centered.add(model); centered.scale.setScalar(scale); pivot.add(centered);
     pivot.rotation.set(.12, -.55, 0);
     stage.classList.add('ready');
+    options.onReady?.();
     const label = document.getElementById('loader-label');
     if (label) label.textContent = 'EVERY ANGLE. EVERY STORY.';
     const started = performance.now();
     function tick(now) {
       if (disposed) return;
-      const t = Math.min((now - started) / 3600, 1);
+      const elapsed = (now - started) / 3600;
+      const t = options.preview ? elapsed % 1 : Math.min(elapsed, 1);
       const eased = t * t * (3 - 2 * t);
       pivot.rotation.y = -.55 + eased * Math.PI * 2;
       pivot.rotation.x = .12 + Math.sin(t * Math.PI * 2) * .1;
       renderer.render(scene, camera);
-      if (t < 1) frame = requestAnimationFrame(tick);
+      if (options.preview || t < 1) frame = requestAnimationFrame(tick);
       else finish();
     }
     frame = requestAnimationFrame(tick);
