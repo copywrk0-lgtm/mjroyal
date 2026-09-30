@@ -1,10 +1,11 @@
 const loader = document.getElementById("loader");
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const previewIntro = new URLSearchParams(location.search).get("intro") === "preview";
 const introSeen = (() => {
   try { return sessionStorage.getItem("mjroyal-wire-intro-seen") === "1"; }
   catch { return false; }
 })();
-if (!introSeen && !reduceMotion && loader) {
+if ((!introSeen || previewIntro) && !reduceMotion && loader) {
   document.body.classList.add("loading");
   let finished = false;
   let cleanup = () => {};
@@ -19,11 +20,14 @@ if (!introSeen && !reduceMotion && loader) {
       {duration:800,easing:"cubic-bezier(.76,0,.24,1)",fill:"forwards"});
     exit.finished.catch(() => {}).then(() => { cleanup(); loader.remove(); });
   }
-  const safetyTimer = setTimeout(finishIntro, 6000);
+  let safetyTimer = setTimeout(finishIntro, 8000);
   document.getElementById("loader-skip")?.addEventListener("click", finishIntro);
   import("./camera-intro.js").then(({startCameraIntro}) => {
     if (finished) return;
-    cleanup = startCameraIntro(document.getElementById("camera-stage"), finishIntro);
+    cleanup = startCameraIntro(document.getElementById("camera-stage"), finishIntro, {
+      preview: previewIntro,
+      onReady() { clearTimeout(safetyTimer); if (!previewIntro) safetyTimer = setTimeout(finishIntro, 5000); }
+    });
   }).catch(() => finishIntro());
 } else {
   loader?.remove();
