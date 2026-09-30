@@ -18,7 +18,7 @@
 <meta name="twitter:image" content="https://mjroyal.vercel.app/assets/photo-03.webp">
 <script>
 try{
-  if(sessionStorage.getItem("mjroyal-wire-intro-seen")){
+  if(sessionStorage.getItem("mjroyal-wire-intro-seen") && new URLSearchParams(location.search).get("intro") !== "preview"){
     document.documentElement.classList.add("intro-seen");
   }
 }catch(e){}
