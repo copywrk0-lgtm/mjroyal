@@ -15,6 +15,7 @@ export function startCameraIntro(stage, finish, options = {}) {
   scene.add(pivot);
   let disposed = false;
   let frame = 0;
+  let flashLamp = null;
   const owned = new Set();
   const face = new THREE.MeshBasicMaterial({ color: '#111110', polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
   const line = new THREE.LineBasicMaterial({ color: '#ecece7', transparent: true, opacity: .72 });
@@ -55,6 +56,18 @@ export function startCameraIntro(stage, finish, options = {}) {
     const centered = new THREE.Group();
     model.position.sub(center);
     centered.add(model); centered.scale.setScalar(scale); pivot.add(centered);
+    const housingGeometry = new THREE.BoxGeometry(.62, .22, .20);
+    const housing = new THREE.Mesh(housingGeometry, face);
+    housing.position.set(0, size.y * scale / 2 + .11, .16);
+    const housingEdges = new THREE.EdgesGeometry(housingGeometry);
+    housing.add(new THREE.LineSegments(housingEdges, line));
+    const lampGeometry = new THREE.PlaneGeometry(.50, .12);
+    const lampMaterial = new THREE.MeshBasicMaterial({color:'#bcbcb4',side:THREE.DoubleSide});
+    flashLamp = new THREE.Mesh(lampGeometry, lampMaterial);
+    flashLamp.position.set(0, housing.position.y, .265);
+    owned.add(housingGeometry); owned.add(housingEdges);
+    owned.add(lampGeometry); owned.add(lampMaterial);
+    pivot.add(housing, flashLamp);
     pivot.rotation.set(.12, -.55, 0);
     stage.classList.add('ready');
     options.onReady?.();
@@ -66,7 +79,7 @@ export function startCameraIntro(stage, finish, options = {}) {
       const elapsed = (now - started) / 3600;
       const t = options.preview ? elapsed % 1 : Math.min(elapsed, 1);
       const eased = t * t * (3 - 2 * t);
-      pivot.rotation.y = -.55 + eased * Math.PI * 2;
+      pivot.rotation.y = -.55 + eased * (Math.PI * 2 + .43);
       pivot.rotation.x = .12 + Math.sin(t * Math.PI * 2) * .1;
       renderer.render(scene, camera);
       if (options.preview || t < 1) frame = requestAnimationFrame(tick);
@@ -74,7 +87,7 @@ export function startCameraIntro(stage, finish, options = {}) {
     }
     frame = requestAnimationFrame(tick);
   }, undefined, () => finish());
-  return () => {
+  const dispose = () => {
     disposed = true;
     cancelAnimationFrame(frame);
     observer.disconnect();
@@ -82,6 +95,18 @@ export function startCameraIntro(stage, finish, options = {}) {
     renderer.dispose();
     renderer.domElement.remove();
   };
+  dispose.flash = () => {
+    if (!flashLamp || disposed) return null;
+    cancelAnimationFrame(frame);
+    pivot.rotation.set(.12, -.12, 0);
+    flashLamp.material.color.set('#ffffff');
+    scene.updateMatrixWorld(true);
+    renderer.render(scene, camera);
+    const point = flashLamp.getWorldPosition(new THREE.Vector3()).project(camera);
+    const rect = stage.getBoundingClientRect();
+    return {x:rect.left+(point.x+1)*rect.width/2, y:rect.top+(1-point.y)*rect.height/2};
+  };
+  return dispose;
 }
 
 // Canvas fallback uses the same camera geometry and rotation when WebGL is unavailable.
@@ -131,13 +156,13 @@ function createSoftwareRenderer() {
           const points=tri.ids.map(i=>projected[i]);
           const [a,b,c]=points;
           if ((b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0])>=0)continue;
-          faces.push({points,edges:tri.edges,z:(a[2]+b[2]+c[2])/3});
+          faces.push({points,edges:tri.edges,z:(a[2]+b[2]+c[2])/3,color:item.mesh.material.color.getStyle()});
         }
       }
       faces.sort((a,b)=>b.z-a.z);
       ctx.fillStyle='#111110';ctx.strokeStyle='rgba(236,236,231,.72)';ctx.lineWidth=.7;
       for(const face of faces){
-        ctx.beginPath();face.points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fill();
+        ctx.beginPath();face.points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fillStyle=face.color;ctx.fill();
         ctx.beginPath();face.edges.forEach((draw,i)=>{if(draw){const a=face.points[i],b=face.points[(i+1)%3];ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);}});ctx.stroke();
       }
     },

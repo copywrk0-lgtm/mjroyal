@@ -15,25 +15,29 @@ if ((!introSeen || previewIntro) && !reduceMotion && loader) {
     clearTimeout(safetyTimer);
     try { sessionStorage.setItem("mjroyal-wire-intro-seen", "1"); } catch {}
     loader.style.pointerEvents = "none";
+    const origin = cleanup.flash?.() || {x:innerWidth/2,y:innerHeight*.28};
+    const radius = Math.hypot(innerWidth,innerHeight);
     const glow = document.createElement("div");
     glow.setAttribute("aria-hidden", "true");
-    glow.style.cssText = "position:absolute;left:50%;top:52%;width:36vmin;height:36vmin;transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;background:radial-gradient(circle,#fff 0%,rgba(255,255,255,.8) 12%,rgba(255,255,255,.2) 38%,transparent 70%);opacity:0;z-index:3";
+    glow.style.cssText = "position:absolute;left:0;top:0;width:12vmin;height:12vmin;transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;background:radial-gradient(circle,#fff 0%,rgba(255,255,255,.8) 12%,rgba(255,255,255,.2) 38%,transparent 70%);opacity:0;z-index:3";
+    glow.style.left = origin.x+"px";
+    glow.style.top = origin.y+"px";
     loader.appendChild(glow);
     glow.animate([
       {opacity:0,transform:"translate(-50%,-50%) scale(.15)"},
-      {opacity:1,transform:"translate(-50%,-50%) scale(1.6)"}
+      {opacity:1,transform:"translate(-50%,-50%) scale(3)"}
     ], {duration:180,easing:"cubic-bezier(.2,.8,.3,1)",fill:"forwards"});
     const flash = document.createElement("div");
     flash.setAttribute("aria-hidden", "true");
     flash.style.cssText = "position:fixed;inset:0;z-index:120;background:#fff;opacity:0;pointer-events:none";
     document.body.appendChild(flash);
     const exposure = flash.animate([
-      {opacity:0},
-      {opacity:1,offset:.10},
-      {opacity:1,offset:.24},
-      {opacity:.55,offset:.50},
-      {opacity:0}
-    ], {duration:900,delay:120,easing:"linear",fill:"forwards"});
+      {opacity:0,clipPath:`circle(0px at ${origin.x}px ${origin.y}px)`},
+      {opacity:1,clipPath:`circle(${radius}px at ${origin.x}px ${origin.y}px)`,offset:.20},
+      {opacity:1,clipPath:`circle(${radius}px at ${origin.x}px ${origin.y}px)`,offset:.32},
+      {opacity:.55,clipPath:`circle(${radius}px at ${origin.x}px ${origin.y}px)`,offset:.55},
+      {opacity:0,clipPath:`circle(${radius}px at ${origin.x}px ${origin.y}px)`}
+    ], {duration:900,delay:70,easing:"linear",fill:"forwards"});
     // Swap the camera for the homepage while the exposure is fully white.
     setTimeout(() => {
       cleanup();
@@ -43,7 +47,7 @@ if ((!introSeen || previewIntro) && !reduceMotion && loader) {
         {filter:"brightness(1.45) saturate(.7)"},
         {filter:"brightness(1) saturate(1)"}
       ], {duration:780,easing:"ease-out"});
-    }, 250);
+    }, 310);
     exposure.finished.catch(() => {}).then(() => flash.remove());
   }
   let safetyTimer = setTimeout(finishIntro, 8000);
