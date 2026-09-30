@@ -1,4 +1,5 @@
 const loader = document.getElementById("loader");
+import('./scroll-motion.js').then(({startScrollMotion}) => startScrollMotion()).catch(() => {});
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const previewIntro = new URLSearchParams(location.search).get("intro") === "preview";
 const introSeen = (() => {
